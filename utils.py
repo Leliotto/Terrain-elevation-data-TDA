@@ -10,6 +10,8 @@ import matplotlib.patches as mpatches
 import scipy.ndimage as ndimage
 from scipy.spatial import cKDTree
 
+MAX_SIZE = 2000
+
 def load_tif(path):
     with rasterio.open(path) as src:
         elev = src.read(1).astype(float)
