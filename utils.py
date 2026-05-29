@@ -76,24 +76,30 @@ def annotate_box(ax, text, xy=(0.02, 0.97), fontsize=8.5, color="0.25"):
 def plot_data_binary(data_dict, cities_list, output_path="output/combined_missing_data_mask.png"):
     valid_cities = [c for c in cities_list if c in data_dict]
     num_cities = len(valid_cities)
-    
+
     fig, axes = plt.subplots(1, num_cities, figsize=(9 * num_cities, 11), facecolor='white')
-    
+
     if num_cities == 1:
         axes = [axes]
-        
-    cmap_holes = plt.cm.colors.ListedColormap(['#111111', '#FF3333'])
-    
+
+    cmap_holes = mcolors.ListedColormap(['#111111', '#FF3333'])
+
     # Loop over the axes and matching city data simultaneously
     for ax, city in zip(axes, valid_cities):
         roi_data = data_dict[city]
-        
-        # Generate the binary missing data mask
-        missing_mask = np.isnan(roi_data)
-        
-        # Calculate statistical attributes for the report text
+
+        # Auto-downsample before building the mask.
+        # matplotlib converts the boolean array to an RGBA float64 buffer
+        # (4 channels × pixels × 8 bytes) when rendering: a full 25000×10000
+        # array would require ~7.5 GiB. Capping the longest axis at 2000 px
+        # keeps the render buffer under ~130 MB.
+        # NaN % statistics are still computed on the full-resolution array.
+        vis_factor = max(1, max(roi_data.shape) // 2000)
+        missing_mask = np.isnan(roi_data[::vis_factor, ::vis_factor])
+
+        # Calculate statistical attributes on the full array for accuracy
         total_pixels = roi_data.size
-        missing_pixels = np.sum(missing_mask)
+        missing_pixels = int(np.isnan(roi_data).sum())
         missing_percentage = (missing_pixels / total_pixels) * 100
 
         ax.imshow(missing_mask, cmap=cmap_holes)
@@ -109,12 +115,12 @@ def plot_data_binary(data_dict, cities_list, output_path="output/combined_missin
 
     # Tighten up structural bounds to avoid overlapping margins or label truncations
     fig.tight_layout()
-    
-    # Save the asset file first
+
+    # Save — dpi=150 is sufficient for full-raster overview plots
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    plt.savefig(output_path, dpi=300, facecolor='white', bbox_inches='tight')
+    plt.savefig(output_path, dpi=150, facecolor='white', bbox_inches='tight')
     print(f"\n[SUCCESS] Saved unified column visualization to: {output_path}\n")
-    
+
     # Force Matplotlib to output and render the image inline within the Jupyter Notebook cell
     plt.show()
 
