@@ -8,5 +8,4 @@ DSM:  https://service.pdok.nl/rws/ahn/atom/dsm_05m.xml
 DSM = everything: ground + buildings + vegetation. Use for urban morphology, building detection.
 
 
-
 Conda env under: environment.yml
